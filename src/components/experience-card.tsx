@@ -1,99 +1,98 @@
 'use client';
 
 import { useState } from 'react';
-import type { Experience } from '@/lib/experiences';
-import { calculateValue, cn } from '@/lib/utils';
-import { Button } from './ui/button';
+import type { CommunityExperience } from '@/lib/parse-screenshot';
+import { calculateValue } from '@/lib/utils';
 
-type ExperienceCardProps = {
-  experience: Experience;
-};
-
-export function ExperienceCard({ experience }: ExperienceCardProps) {
-  const [index, setIndex] = useState(
-    Math.min(1, experience.redeemValues.length - 1)
-  );
-  const [reported, setReported] = useState(false);
-  const selected =
-    experience.redeemValues[
-      Math.min(index, experience.redeemValues.length - 1)
-    ];
-  const community = 'source' in experience && experience.source === 'community';
-
+export function ExperienceCard({
+  experience,
+  featured = false,
+}: {
+  experience: CommunityExperience;
+  featured?: boolean;
+}) {
+  const [reportStatus, setReportStatus] = useState<
+    'idle' | 'sending' | 'done' | 'error'
+  >('idle');
+  const redemption = experience.redeemValues[0];
+  let reportLabel = 'Report an issue';
+  if (reportStatus === 'sending') {
+    reportLabel = 'Sending…';
+  }
+  if (reportStatus === 'done') {
+    reportLabel = 'Report received';
+  }
+  async function report() {
+    setReportStatus('sending');
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: experience.id }),
+      });
+      if (!response.ok) {
+        throw new Error('Could not send report. Please try again.');
+      }
+      setReportStatus('done');
+    } catch {
+      setReportStatus('error');
+    }
+  }
   return (
-    <div className="flex flex-col rounded-lg border p-4">
-      {experience.link ? (
-        <a href={experience.link} rel="noopener noreferrer" target="_blank">
-          <h3 className="font-bold text-lg underline">{experience.name}</h3>
-        </a>
-      ) : (
-        <h3 className="font-bold text-lg">{experience.name}</h3>
-      )}
-      <p className="mb-2 text-muted-foreground text-sm">
+    <article
+      className={`rounded-2xl border p-4 sm:p-5 ${featured ? 'border-[#c5b69c] bg-[#fffdf8]' : 'border-[#ded7c9] bg-white'}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-bold text-[#7c6958] text-xs uppercase tracking-[0.16em]">
+            {experience.category}
+          </p>
+          <h3 className="mt-1 font-bold text-[#202c28] text-xl leading-tight">
+            {experience.name}
+          </h3>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-extrabold text-2xl text-[#aa572f] leading-none">
+            £{calculateValue(experience).toFixed(2)}
+          </p>
+          <p className="mt-1 text-[#675d52] text-xs">per 1,000 pts</p>
+        </div>
+      </div>
+      <p className="mt-2 text-[#574f47] text-sm leading-relaxed">
         {experience.description}
       </p>
-      {community && 'expiresAt' in experience && (
-        <p className="mb-3 text-muted-foreground text-xs">
-          Community upload · Available until{' '}
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-[#e7ded1] border-t pt-3 text-sm">
+        <span>
+          <strong>£{redemption.value}</strong> for{' '}
+          {redemption.points.toLocaleString()} pts
+        </span>
+        <span>
+          <strong>{experience.earnPointsPerPound}</strong> pts per £1
+        </span>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[#675d52] text-xs">
+        <span>
+          Until{' '}
           {new Date(`${experience.expiresAt}T12:00:00Z`).toLocaleDateString(
             'en-GB',
             { day: 'numeric', month: 'short', year: 'numeric' }
-          )}
-        </p>
-      )}
-      <div className="mt-auto grid gap-2 text-xs">
-        <div className="rounded-sm bg-slate-50 p-2">
-          <p className="mb-1 font-bold uppercase tracking-widest">Earn</p>
-          <p>
-            {'earnPointsPerPound' in experience
-              ? `${experience.earnPointsPerPound} points per £1`
-              : experience.earnMultiplier || 'See offer'}
-          </p>
-        </div>
-        <div className="rounded-sm bg-slate-50 p-2">
-          <p className="mb-1 font-bold uppercase tracking-widest">Redeem</p>
-          <p className="text-right text-lg">
-            {selected.points.toLocaleString()}{' '}
-            <span className="text-xs">points</span>
-          </p>
-          <div className="mt-1 grid h-auto grid-cols-3 gap-1">
-            {experience.redeemValues.map(({ points, value }, i) => (
-              <Button
-                className={cn(
-                  'rounded-full border-2 border-white p-0.5 text-xs hover:bg-amber-800 hover:text-white',
-                  index === i && 'bg-amber-700 text-white'
-                )}
-                key={`${experience.name}-${points}`}
-                onClick={() => setIndex(i)}
-                variant="secondary"
-              >
-                £{value}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-sm bg-slate-50 p-2">
-          <p className="mb-1 font-bold uppercase tracking-widest">Value</p>
-          <p>£{calculateValue(experience).toFixed(2)} per 1000 points</p>
-        </div>
-      </div>
-      {community && 'id' in experience && (
+          )}{' '}
+          · Community submitted
+        </span>
         <button
-          className="mt-3 self-start text-muted-foreground text-xs underline"
-          disabled={reported}
-          onClick={async () => {
-            const response = await fetch('/api/reports', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: experience.id }),
-            });
-            if (response.ok) setReported(true);
-          }}
+          className="underline underline-offset-2 hover:text-[#202c28] disabled:no-underline"
+          disabled={reportStatus === 'sending' || reportStatus === 'done'}
+          onClick={report}
           type="button"
         >
-          {reported ? 'Report received' : 'Report incorrect entry'}
+          {reportLabel}
         </button>
+      </div>
+      {reportStatus === 'error' && (
+        <p className="mt-2 text-red-700 text-xs" role="alert">
+          Could not send report. Please try again.
+        </p>
       )}
-    </div>
+    </article>
   );
 }

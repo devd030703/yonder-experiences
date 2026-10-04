@@ -8,8 +8,9 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: 'Yonder Experience Calculator',
-  description: 'Calculate the value of your Yonder experiences',
+  title: 'Yonder Experiences | Independent Rewards Guide',
+  description:
+    'Compare current community submitted Yonder experiences by value per 1,000 points.',
 };
 
 export default function RootLayout({

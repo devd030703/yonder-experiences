@@ -8,6 +8,9 @@ import type { CommunityExperience } from '@/lib/parse-screenshot';
 import { calculateValue } from '@/lib/utils';
 
 type UploadResult = { offer: CommunityExperience; duplicate: boolean };
+const validFile = (file: File) =>
+  ['image/jpeg', 'image/png', 'image/webp'].includes(file.type) &&
+  file.size <= 4 * 1024 * 1024;
 
 export function ScreenshotUpload({ onPublished }: { onPublished: () => void }) {
   const input = useRef<HTMLInputElement>(null);
@@ -17,39 +20,30 @@ export function ScreenshotUpload({ onPublished }: { onPublished: () => void }) {
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     event.target.value = '';
     setResult(null);
 
-    if (
-      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-      file.size > 10 * 1024 * 1024
-    ) {
-      setMessage('Choose a JPG, PNG or WebP screenshot smaller than 10 MB.');
+    if (!validFile(file)) {
+      setMessage('Choose a JPG, PNG or WebP screenshot smaller than 4 MB.');
       return;
     }
 
     setBusy(true);
-    setMessage('Reading your screenshot…');
+    setMessage('Reading and checking your screenshot…');
     try {
-      const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker('eng');
-      let text: string;
-      try {
-        const scan = await worker.recognize(file);
-        text = scan.data.text;
-      } finally {
-        await worker.terminate();
-      }
-
-      setMessage('Checking the offer and saving it…');
+      const form = new FormData();
+      form.set('screenshot', file);
       const response = await fetch('/api/experiences', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: form,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Upload failed.');
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Upload failed.');
+      }
       setResult(data as UploadResult);
       setMessage(
         data.duplicate
@@ -69,10 +63,13 @@ export function ScreenshotUpload({ onPublished }: { onPublished: () => void }) {
   }
 
   return (
-    <section className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
+    <section
+      className="rounded-2xl border border-[#dac9ae] bg-[#f5ead8] p-4 sm:p-5"
+      id="contribute"
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-semibold text-xl">Seen a new experience?</h2>
+          <h2 className="font-semibold text-lg">Seen a new experience?</h2>
           <p className="mt-1 text-sm">
             Upload a Yonder app screenshot. We’ll read, check and add it
             automatically.
@@ -94,9 +91,9 @@ export function ScreenshotUpload({ onPublished }: { onPublished: () => void }) {
           {busy ? 'Processing…' : 'Upload screenshot'}
         </Button>
       </div>
-      <p aria-live="polite" className="mt-3 text-sm">
+      <output aria-live="polite" className="mt-3 block text-sm">
         {message}
-      </p>
+      </output>
       {result && (
         <p className="mt-1 text-sm">
           {result.offer.name}: £{result.offer.redeemValues[0].value} for{' '}
@@ -105,8 +102,8 @@ export function ScreenshotUpload({ onPublished }: { onPublished: () => void }) {
         </p>
       )}
       <p className="mt-2 text-muted-foreground text-xs">
-        The screenshot is read in your browser. We save only the extracted offer
-        details.
+        Your screenshot is checked privately and discarded. Only the offer
+        details are saved.
       </p>
     </section>
   );
