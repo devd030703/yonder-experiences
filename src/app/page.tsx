@@ -170,14 +170,23 @@ export default function HomePage() {
         </p>
       </main>
       <footer className="border-[#d9cbb7] border-t bg-[#f0e8d9] px-4 py-5 text-center text-[#675d52] text-xs">
-        Based on the original{' '}
+        Built by{' '}
+        <a
+          className="underline"
+          href="https://github.com/devd030703/yonder-experiences"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Dev Deepak
+        </a>
+        . Forked from{' '}
         <a
           className="underline"
           href="https://github.com/danbillson/yonder-experiences"
           rel="noopener noreferrer"
           target="_blank"
         >
-          Yonder Experiences project by Dan Billson
+          Dan Billson’s original repository
         </a>
         .
       </footer>

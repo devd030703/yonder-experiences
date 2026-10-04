@@ -1,6 +1,6 @@
 # Yonder Experiences
 
-This is a simple app to visualise the value per points for different experiences through the Yonder credit card
+Built and maintained by Dev Deepak. This site compares the value of current Yonder experiences and lets the community add offers from app screenshots. It was forked from [Dan Billson's original repository](https://github.com/danbillson/yonder-experiences).
 
 ## Tools
 
@@ -12,7 +12,7 @@ This is a simple app to visualise the value per points for different experiences
 
 ## Contributing
 
-Feel free to contribute to this repo by forking your own version and creating a pull request back into this one, happy to accept updates for data or any other improvements
+Contributions to [Dev Deepak's repository](https://github.com/devd030703/yonder-experiences) are welcome through pull requests.
 
 _Original sample data_
 
